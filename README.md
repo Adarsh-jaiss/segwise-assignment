@@ -83,8 +83,8 @@ These indexes optimize queries for:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/segwise.git
-   cd segwise
+   git clone https://github.com/Adarsh-jaiss/segwise-assignment.git
+   cd segwise-assingment
    ```
 
 2. **Run the application using Docker Compose**

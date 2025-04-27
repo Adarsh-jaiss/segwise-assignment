@@ -5,10 +5,11 @@ import (
 	"context"
 )
 
-func NewRedisClient(addr, password string) (*redis.Client, error) {
+func NewRedisClient(addr, password, username string) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
+		Username: username,
 		DB:       0,
 	})
 

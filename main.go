@@ -22,16 +22,16 @@ import (
 
 var REDDIS_CONN_ADDR = os.Getenv("REDIS_CONN_ADDR")
 var REDDIS_PASSWORD = os.Getenv("REDIS_PASSWORD")
+var REDDIS_USERNAME = os.Getenv("REDDIS_USERNAME")
 
-func init() {
 
+func main() {
+	
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("No .env file found, relying on environment variables")
 	}
-}
 
-func main() {
 	dbConn, err := db.ConnectPostgres()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -43,7 +43,7 @@ func main() {
 	}
 	fmt.Println("Database migrated successfully")
 
-	redisClient, err := cache.NewRedisClient(REDDIS_CONN_ADDR, REDDIS_PASSWORD)
+	redisClient, err := cache.NewRedisClient(REDDIS_CONN_ADDR, REDDIS_PASSWORD, REDDIS_USERNAME)
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
