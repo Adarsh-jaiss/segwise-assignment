@@ -1,39 +1,29 @@
-FROM golang:1.20-alpine AS builder
+FROM golang:1.21-alpine as build
 
 WORKDIR /app
 
-# Copy go.mod and go.sum files
+RUN adduser -D -u 1001 nonroot
+
 COPY go.mod go.sum ./
 
-# Download dependencies
 RUN go mod download
 
-# Copy the source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o segwise-app
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-w -s" \
+    -o main
 
-# Final lightweight image
-FROM alpine:latest
+FROM scratch
 
-WORKDIR /app
+COPY .env .env
 
-# Copy the binary from the builder stage
-COPY --from=builder /app/segwise-app .
-COPY --from=builder /app/migrations ./migrations
+COPY --from=build /etc/passwd /etc/passwd
+COPY --from=build /app/main main
+COPY --from=build /app/migrations ./migrations
 
-# Create required directories
-RUN mkdir -p /app/logs
+USER nonroot
 
-# Install necessary tools
-RUN apk --no-cache add ca-certificates tzdata
-
-# Set environment variables
-ENV TZ=UTC
-
-# Expose the application port
 EXPOSE 8080
 
-# Run the application
-CMD ["./segwise-app"]
+CMD ["./main"]

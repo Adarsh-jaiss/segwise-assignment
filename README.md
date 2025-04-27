@@ -79,7 +79,7 @@ These indexes optimize queries for:
 - Docker and Docker Compose
 - Git
 
-### Running Locally with Docker
+### Running Locally with and without Docker
 
 1. **Clone the repository**
    ```bash
@@ -95,6 +95,20 @@ These indexes optimize queries for:
    - Build the application container
    - Start PostgreSQL and Redis containers
    - Apply database migrations automatically
+   - Start the webhook delivery workers
+  
+   ```
+
+2. **Run the application without Docker**
+   ```bash
+   go mod download
+   make run
+   ```
+   This will:
+   - Download all Go dependencies
+   - Start the application using the Makefile
+   - Connect to PostgreSQL and Redis
+   - Apply database migrations
    - Start the webhook delivery workers
 
 3. **Verify the application is running**
