@@ -46,51 +46,6 @@ echo -e "${GREEN}Subscription details:${NC}"
 echo $SUBSCRIPTION_DETAILS | json_pp
 echo ""
 
-# Step 3: Trigger a webhook delivery
-echo -e "${YELLOW}Triggering webhook delivery...${NC}"
-DELIVERY_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/ingest/$SUBSCRIPTION_ID" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "custom webhook",
-    "body": "testing the webhook delivery",
-    "userId": 99
-  }')
-
-# Extract task ID from the response
-TASK_ID=$(echo $DELIVERY_RESPONSE | grep -o '"task_id":"[^"]*' | cut -d':' -f2 | tr -d '"')
-
-if [ -z "$TASK_ID" ]; then
-  echo -e "${RED}Failed to trigger webhook. Response: $DELIVERY_RESPONSE${NC}"
-  exit 1
-fi
-
-echo -e "${GREEN}Webhook triggered successfully! Task ID: $TASK_ID${NC}\n"
-
-# Step 4: Check task status (with retries for processing time)
-echo -e "${YELLOW}Checking task status...${NC}"
-MAX_RETRIES=10
-RETRY_COUNT=0
-TASK_STATUS=""
-
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-  TASK_STATUS_RESPONSE=$(curl -s -X GET "${BASE_URL}/api/tasks/$TASK_ID")
-  TASK_STATUS=$(echo $TASK_STATUS_RESPONSE | grep -o '"status":"[^"]*' | cut -d':' -f2 | tr -d '"')
-  
-  if [ "$TASK_STATUS" = "completed" ] || [ "$TASK_STATUS" = "failed" ]; then
-    break
-  fi
-  
-  echo -e "Task still processing, waiting 1 second..."
-  sleep 1
-  RETRY_COUNT=$((RETRY_COUNT + 1))
-done
-
-echo -e "${GREEN}Task status:${NC}"
-echo $TASK_STATUS_RESPONSE | json_pp
-echo ""
-
-
-
 # Step 7: Get subscription tasks
 echo -e "${YELLOW}Retrieving subscription tasks...${NC}"
 SUBSCRIPTION_TASKS=$(curl -s -X GET "${BASE_URL}/api/subscriptions/$SUBSCRIPTION_ID/tasks")

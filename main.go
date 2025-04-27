@@ -60,6 +60,15 @@ func main() {
 
 	e := echo.New()
 	e.Use(middleware.Logger())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{echo.GET, echo.PUT, echo.PATCH, echo.POST, echo.DELETE, echo.OPTIONS},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
+		AllowCredentials: true,
+		ExposeHeaders: []string{"Content-Length"},
+		MaxAge: 86400,
+	}))
+
 	api.RegisterRoutes(e, dbConn, redisClient)
 
 	// Add graceful shutdown for the webhook workers

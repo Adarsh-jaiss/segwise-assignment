@@ -1,0 +1,347 @@
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2c3e50;
+    --accent-color: #e74c3c;
+    --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --light-color: #ecf0f1;
+    --dark-color: #34495e;
+    --border-color: #ddd;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    gap: 10px;
+}
+
+header h1 i {
+    color: var(--primary-color);
+}
+
+/* Navigation */
+nav {
+    background-color: var(--dark-color);
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+nav ul {
+    display: flex;
+    list-style-type: none;
+}
+
+nav li {
+    flex: 1;
+    text-align: center;
+}
+
+nav a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    padding: 15px 0;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+nav a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+nav a.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Section Content */
+.section-content {
+    display: none;
+}
+
+.section-content.active {
+    display: block;
+}
+
+/* Cards */
+.card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+textarea {
+    resize: vertical;
+    font-family: monospace;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+.btn:hover {
+    background-color: #dde4e6;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.btn-danger {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+/* Search Container */
+.search-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.search-container input,
+.search-container select {
+    flex: 1;
+}
+
+.search-container button {
+    white-space: nowrap;
+}
+
+/* Heading Styles */
+h2 {
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+}
+
+h3 {
+    margin: 15px 0;
+    color: var(--dark-color);
+}
+
+/* JSON Display */
+.json-display {
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    padding: 15px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Subscription List */
+.data-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.subscription-item {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 15px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.subscription-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.subscription-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.subscription-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.subscription-details-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--primary-color);
+}
+
+.subscription-details {
+    margin-top: 10px;
+    display: none;
+}
+
+.subscription-details.visible {
+    display: block;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none;
+}
+
+.actions {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 20px 0;
+}
+
+/* Loader */
+.loader {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Notification */
+.notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--dark-color);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    z-index: 1000;
+    max-width: 400px;
+}
+
+.notification.success {
+    background-color: var(--success-color);
+}
+
+.notification.error {
+    background-color: var(--accent-color);
+}
+
+.notification.warning {
+    background-color: var(--warning-color);
+}
+
+.notification.loading {
+    background-color: var(--primary-color);
+}
+
+.notification button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    nav ul {
+        flex-direction: column;
+    }
+    
+    .search-container {
+        flex-direction: column;
+    }
+    
+    .subscription-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+} 

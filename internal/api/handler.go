@@ -92,7 +92,7 @@ func (h *Handler) deleteSubscriptions(db *sql.DB) echo.HandlerFunc {
 
 		err := store.DeleteSubscriptionByIDFromStore(db, id)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete subscription")
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to delete subscription : %v", err))
 		}
 
 		// Delete from Redis cache
@@ -125,6 +125,18 @@ func (h *Handler) updateSubscriptions(db *sql.DB) echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusAccepted, "Subscription updated")
+	}
+}
+
+
+func (h *Handler) getAllSubscriptions(db *sql.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		subscriptions, err := store.GetAllSubscriptionsFromDB(db)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to fetch subscriptions: %v", err))
+		}
+
+		return c.JSON(http.StatusOK, subscriptions)
 	}
 }
 
@@ -274,42 +286,9 @@ func (h *Handler) GetRecentDeliveryAttempts(db *sql.DB) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid subscription ID format")
 		}
 
-		// Execute a custom query to get only the most recent attempts
-		query := `
-			SELECT id, task_id, subscription_id, target_url, timestamp, attempt_number, 
-				status, status_code, error_details, created_at, updated_at
-			FROM logs 
-			WHERE subscription_id = $1
-			ORDER BY timestamp DESC
-			LIMIT $2
-		`
-
-		rows, err := db.QueryContext(c.Request().Context(), query, subscriptionUUID, limit)
+		logs, err := store.GetRecentDeliveryAttemptsFromDB(db, subscriptionUUID, limit)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to query logs: %v", err))
-		}
-		defer rows.Close()
-
-		var logs []types.Logs
-		for rows.Next() {
-			var log types.Logs
-			err := rows.Scan(
-				&log.ID,
-				&log.TaskID,
-				&log.SubscriptionID,
-				&log.TargetURL,
-				&log.Timestamp,
-				&log.AttemptNumber,
-				&log.Status,
-				&log.StatusCode,
-				&log.ErrorDetails,
-				&log.CreatedAt,
-				&log.UpdatedAt,
-			)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Error scanning log row: %v", err))
-			}
-			logs = append(logs, log)
+			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -320,6 +299,7 @@ func (h *Handler) GetRecentDeliveryAttempts(db *sql.DB) echo.HandlerFunc {
 		})
 	}
 }
+
 
 func sendTaskToQueue(taskID string, payload interface{}) error {
 	// Create HTTP client
@@ -354,3 +334,4 @@ func sendTaskToQueue(taskID string, payload interface{}) error {
 
 	return nil
 }
+

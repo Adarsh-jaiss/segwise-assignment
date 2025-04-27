@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segwise Webhook Delivery System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-webhook"></i> Segwise Webhook Delivery System</h1>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#" class="nav-link active" data-section="subscriptions">Subscriptions</a></li>
+                <li><a href="#" class="nav-link" data-section="create-subscription">Create Subscription</a></li>
+                <li><a href="#" class="nav-link" data-section="tasks">Tasks</a></li>
+                <li><a href="#" class="nav-link" data-section="analytics">Analytics</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <!-- Subscription List Section -->
+            <section id="subscriptions" class="section-content active">
+                <h2>Webhook Subscriptions</h2>
+                <div class="card">
+                    <div class="actions">
+                        <button id="refresh-subscriptions" class="btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    <div id="subscriptions-list" class="data-list">
+                        <div class="loader"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Create Subscription Section -->
+            <section id="create-subscription" class="section-content">
+                <h2>Create New Webhook Subscription</h2>
+                <div class="card">
+                    <form id="subscription-form">
+                        <div class="form-group">
+                            <label for="sub-name">Name</label>
+                            <input type="text" id="sub-name" required placeholder="Subscription name">
+                        </div>
+                        <div class="form-group">
+                            <label for="target-url">Target URL</label>
+                            <input type="url" id="target-url" required placeholder="https://your-webhook-endpoint.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="payload">Default Payload (JSON)</label>
+                            <textarea id="payload" rows="10" required placeholder='{"key": "value"}'></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Subscription</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Update Subscription Section -->
+            <section id="update-subscription" class="section-content">
+                <h2>Update Webhook Subscription</h2>
+                <div class="card">
+                    <form id="update-subscription-form">
+                        <input type="hidden" id="update-subscription-id">
+                        <div class="form-group">
+                            <label for="update-sub-name">Name</label>
+                            <input type="text" id="update-sub-name" required placeholder="Subscription name">
+                        </div>
+                        <div class="form-group">
+                            <label for="update-target-url">Target URL</label>
+                            <input type="url" id="update-target-url" required placeholder="https://your-webhook-endpoint.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="update-payload">Default Payload (JSON)</label>
+                            <textarea id="update-payload" rows="10" required placeholder='{"key": "value"}'></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Update Subscription</button>
+                            <button type="button" id="cancel-update" class="btn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Task Management Section -->
+            <section id="tasks" class="section-content">
+                <h2>Webhook Tasks</h2>
+                <div class="card">
+                    <div class="subscription-tasks-container">
+                        <h3>Subscription Tasks</h3>
+                        <p class="info-text">View all tasks associated with a specific subscription by entering the subscription ID below.</p>
+                        <div class="search-container">
+                            <input type="text" id="subscription-id-input" placeholder="Enter Subscription ID">
+                            <button id="get-subscription-tasks" class="btn"><i class="fas fa-tasks"></i> Get Tasks</button>
+                        </div>
+                        <div id="subscription-tasks" class="hidden">
+                            <div id="subscription-tasks-list" class="json-display">
+                                <!-- Subscription tasks will be shown here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trigger Webhook Section -->
+            <section id="analytics" class="section-content">
+                <h2>Analytics & Webhook Testing</h2>
+                <div class="card">
+                    <h3>Trigger Webhook</h3>
+                    <div class="search-container">
+                        <input type="text" id="trigger-subscription-id" placeholder="Enter Subscription ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="custom-payload">Custom Payload (JSON)</label>
+                        <textarea id="custom-payload" rows="6" placeholder='{"key": "value"}'></textarea>
+                    </div>
+                    <button id="trigger-webhook" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Trigger Webhook</button>
+                    <div id="trigger-result" class="hidden">
+                        <h4>Trigger Result</h4>
+                        <div id="trigger-result-details" class="json-display">
+                            <!-- Trigger result will be shown here -->
+                        </div>
+                    </div>
+                    <hr>
+                    <h3>Recent Delivery Attempts</h3>
+                    <div class="search-container">
+                        <input type="text" id="analytics-subscription-id" placeholder="Enter Subscription ID">
+                        <select id="attempts-limit">
+                            <option value="5">5 entries</option>
+                            <option value="10">10 entries</option>
+                            <option value="20">20 entries</option>
+                        </select>
+                        <button id="get-recent-attempts" class="btn"><i class="fas fa-chart-line"></i> Get Analytics</button>
+                    </div>
+                    <div id="recent-attempts" class="hidden">
+                        <div id="recent-attempts-list" class="json-display">
+                            <!-- Recent attempts will be shown here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div id="notification" class="notification hidden">
+            <span id="notification-message"></span>
+            <button id="close-notification"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+    <script src="./app.js"></script>
+</body>
+</html> 

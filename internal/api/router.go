@@ -11,6 +11,7 @@ func RegisterRoutes(e *echo.Echo, db *sql.DB, redis *redis.Client) {
 	h := NewHandler(db, redis)
 
 	e.GET("/", h.hello)
+	e.GET("/api/subscriptions",h.getAllSubscriptions(db))
 	e.POST("/api/subscriptions", h.createSubscriptions(db))
 	e.GET("/api/subscriptions/:id", h.getSubscriptions(db))
 	e.DELETE("/api/subscriptions/:id", h.deleteSubscriptions(db))
@@ -20,11 +21,11 @@ func RegisterRoutes(e *echo.Echo, db *sql.DB, redis *redis.Client) {
 	e.POST("/api/ingest/:id", h.IngestTask(redis))
 
 	// Add these routes for task status management
-	e.GET("/api/tasks/:id", h.GetTaskStatus(redis))
-	e.GET("/api/subscriptions/:id/tasks", h.GetSubscriptionTasks(redis))
+	e.GET("/api/tasks/:id", h.GetTaskStatus(redis))		//  fetched from redis
+	e.GET("/api/subscriptions/:id/tasks", h.GetSubscriptionTasks(redis))	//fetched from redus
 
 	// Log-related routes
-	e.GET("/api/subscriptions/:id/logs", h.GetSubscriptionLogs(db))
+	e.GET("/api/subscriptions/:id/logs", h.GetSubscriptionLogs(db))	
 
 	// Analytics routes
 	e.GET("/api/analytics/subscriptions/:id/recent-attempts", h.GetRecentDeliveryAttempts(db))
