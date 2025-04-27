@@ -96,8 +96,6 @@ These indexes optimize queries for:
    - Start PostgreSQL and Redis containers
    - Apply database migrations automatically
    - Start the webhook delivery workers
-  
-   ```
 
 2. **Run the application without Docker**
 
