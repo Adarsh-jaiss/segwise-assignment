@@ -5,7 +5,7 @@ Segwise is a robust, scalable webhook delivery system designed to reliably deliv
 ## Live Deployment
 
 The application is deployed and accessible at:
-[https://segwise-webhooks.example.com](https://segwise-webhooks.example.com)
+[https://segwise-assignment-ui.onrender.com/](https://segwise-assignment-ui.onrender.com/)
 
 ## Architecture Overview
 
@@ -100,6 +100,23 @@ These indexes optimize queries for:
    ```
 
 2. **Run the application without Docker**
+
+  Add the following environment variables to your `.env` file:
+  ```
+  DB_USER= postgres
+  DB_PASSWORD= postgres
+  DB_HOST= localhost
+  DB_PORT = 5432
+  DB_NAME = segwise
+  REDIS_CONN_ADDR = localhost:6379
+  REDIS_PASSWORD =
+  REDDIS_USERNAME=
+  ```
+
+  and make sure you have PostgreSQL and Redis installed locally.
+
+   Then run the following commands:
+
    ```bash
    go mod download
    make run
@@ -115,6 +132,16 @@ These indexes optimize queries for:
    ```bash
    curl http://localhost:8080/
    ```
+
+   and you can also open the UI in your browser using this command in linux/macOS:
+    ```bash
+    open ui/index.html
+    ```
+    or in windows:
+      ```bash
+      start ui/index.html
+      ```
+   This will open the UI in your default web browser.
    You should see "Hello, World!" as the response
 
 4. **Create a test subscription**
