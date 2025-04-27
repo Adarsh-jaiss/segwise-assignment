@@ -52,7 +52,7 @@ func (h *Handler) createSubscriptions(db *sql.DB) echo.HandlerFunc {
 
 		err = sendTaskToQueue(response, subscriptions.Payload)
 		if err != nil {
-			fmt.Errorf("error sending task to queue : %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("error sending task to queue : %v", err))
 		}
 
 		// Implement the logic to create subscriptions
@@ -221,33 +221,6 @@ func (h *Handler) GetSubscriptionTasks(redis *redis.Client) echo.HandlerFunc {
 	}
 }
 
-// GetTaskLogs retrieves all logs for a specific task
-func (h *Handler) GetTaskLogs(db *sql.DB) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		taskID := c.Param("id")
-		if taskID == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task ID is required")
-		}
-
-		// Convert string ID to UUID
-		taskUUID, err := uuid.Parse(taskID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID format")
-		}
-
-		// Create a log service
-		logService := service.NewLogService(db)
-
-		// Get logs for the task
-		logs, err := logService.GetLogsByTaskID(c.Request().Context(), taskUUID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to retrieve logs: %v", err))
-		}
-
-		return c.JSON(http.StatusOK, logs)
-	}
-}
-
 // GetSubscriptionLogs retrieves all logs for a subscription
 func (h *Handler) GetSubscriptionLogs(db *sql.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -275,46 +248,7 @@ func (h *Handler) GetSubscriptionLogs(db *sql.DB) echo.HandlerFunc {
 	}
 }
 
-// GetTaskAnalytics retrieves detailed status and analytics for a task
-func (h *Handler) GetTaskAnalytics(db *sql.DB, redis *redis.Client) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		taskID := c.Param("id")
-		if taskID == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task ID is required")
-		}
 
-		if worker.GlobalScheduler == nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Webhook scheduler not initialized")
-		}
-
-		// Get task status from Redis
-		task, err := worker.GlobalScheduler.GetTaskStatus(taskID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Errorf("Task not found: %v", err))
-		}
-
-		// Convert string ID to UUID for logs lookup
-		taskUUID, err := uuid.Parse(taskID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID format")
-		}
-
-		// Create a log service
-		logService := service.NewLogService(db)
-
-		// Get logs for the task
-		logs, err := logService.GetLogsByTaskID(c.Request().Context(), taskUUID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("Failed to retrieve logs: %v", err))
-		}
-
-		// Combine task status and logs into a single response
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"task":             task,
-			"delivery_history": logs,
-		})
-	}
-}
 
 // GetRecentDeliveryAttempts retrieves the most recent delivery attempts for a subscription
 func (h *Handler) GetRecentDeliveryAttempts(db *sql.DB) echo.HandlerFunc {
@@ -398,7 +332,7 @@ func sendTaskToQueue(taskID string, payload interface{}) error {
 	}
 
 	// Create request with taskID in path parameter
-	req, err := http.NewRequest("POST", fmt.Sprintf("/api/ingest/%s", taskID), bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:8080/api/ingest/%s", taskID), bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
@@ -412,7 +346,7 @@ func sendTaskToQueue(taskID string, payload interface{}) error {
 		return fmt.Errorf("failed to send request: %v", err)
 	}
 	defer resp.Body.Close()
-
+	fmt.Println("Response Status:", resp.Status)
 	// Check response status
 	if resp.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)

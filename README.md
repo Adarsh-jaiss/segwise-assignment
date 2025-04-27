@@ -34,6 +34,7 @@ The application is deployed and accessible at:
        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
        name TEXT NOT NULL,
        target_url TEXT NOT NULL,
+       payload JSONB,
        secret TEXT,
        active BOOLEAN NOT NULL DEFAULT true,
        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -102,11 +103,43 @@ These indexes optimize queries for:
    ```
    You should see "Hello, World!" as the response
 
-4. **Run the test script to verify functionality**
+4. **Create a test subscription**
    ```bash
+   curl -X POST http://localhost:8080/api/subscriptions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "name": "test-1",
+      "target_url": "https://jsonplaceholder.typicode.com/posts",
+      "payload": {
+        "title": "foo",
+        "body": "bar",
+        "userId": 1
+      }
+    }'
+   ```
+
+   This will:
+   - Create a new subscription in the database
+   - Generate a unique UUID for the subscription
+   - Set the subscription as active by default
+   - Queue the initial webhook delivery task
+   - Return a response with the subscription ID and confirmation message
+   - The webhook will be delivered to the specified target URL (JSONPlaceholder in this example)
+  
+5. **Test the webhook delivery system and all API's**
+   ```bash
+   # Run the test webhook script to test worker implementation
+   go run internal/test/test-webhook.go
+
+   # Run the test script to test all API endpoints
    ./test.sh
    ```
-   This will create a test subscription, ingest a webhook, and verify delivery
+
+   The test script will:
+   - Create test subscriptions
+   - Send test webhooks
+   - Verify delivery status
+   - Check logs and analytics
 
 ### Stopping the Application
 
@@ -125,98 +158,323 @@ docker-compose down -v
 
 #### Create a Subscription
 
-```bash
-curl -X POST http://localhost:8080/subscriptions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "My Test Webhook",
+Creates a new webhook subscription and returns the subscription ID.
+
+- **URL**: `/api/subscriptions`
+- **Method**: `POST`
+- **Content-Type**: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "name": "test-1",
     "target_url": "https://jsonplaceholder.typicode.com/posts",
-    "secret": "my-signing-secret",
     "payload": {
-      "custom_field": "value",
-      "another_field": 123
+      "title": "foo",
+      "body": "bar",
+      "userId": 1
     }
-  }'
-```
+  }
+  ```
+- **Success Response**:
+  - **Code**: `202 Accepted`
+  - **Content**:
+    ```json
+    {
+      "id": "9332827c-7972-454f-bee1-a128047c5557",
+      "message": "Subscription created"
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X POST http://localhost:8080/api/subscriptions \
+    -H "Content-Type: application/json" \
+    -d '{
+      "name": "test-1",
+      "target_url": "https://jsonplaceholder.typicode.com/posts",
+      "payload": {
+        "title": "foo",
+        "body": "bar",
+        "userId": 1
+      }
+    }'
+  ```
 
 #### Get a Subscription
 
-```bash
-curl -X GET http://localhost:8080/subscriptions/YOUR_SUBSCRIPTION_ID
-```
+Retrieves details about a specific subscription by ID.
+
+- **URL**: `/api/subscriptions/:id`
+- **Method**: `GET`
+- **URL Parameters**: `id=[UUID]` - The subscription ID
+- **Success Response**:
+  - **Code**: `200 OK`
+  - **Content**:
+    ```json
+    {
+      "id": "9332827c-7972-454f-bee1-a128047c5557",
+      "name": "test-1",
+      "target_url": "https://jsonplaceholder.typicode.com/posts",
+      "payload": {
+        "title": "foo",
+        "body": "bar",
+        "userId": 1
+      },
+      "active": true,
+      "created_at": "2023-07-01T10:15:30Z",
+      "updated_at": "2023-07-01T10:15:30Z"
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X GET http://localhost:8080/api/subscriptions/9332827c-7972-454f-bee1-a128047c5557
+  ```
 
 #### Update a Subscription
 
-```bash
-curl -X PATCH http://localhost:8080/subscriptions/YOUR_SUBSCRIPTION_ID \
-  -H "Content-Type: application/json" \
-  -d '{
+Updates an existing subscription by ID.
+
+- **URL**: `/api/subscriptions/:id`
+- **Method**: `PATCH`
+- **Content-Type**: `application/json`
+- **URL Parameters**: `id=[UUID]` - The subscription ID
+- **Request Body**:
+  ```json
+  {
     "name": "Updated Webhook Name",
     "target_url": "https://jsonplaceholder.typicode.com/posts",
     "payload": {
       "custom_field": "new_value",
       "another_field": 456
     }
-  }'
-```
+  }
+  ```
+- **Success Response**:
+  - **Code**: `200 OK`
+  - **Content**:
+    ```json
+    {
+      "id": "9332827c-7972-454f-bee1-a128047c5557",
+      "message": "Subscription updated"
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X PATCH http://localhost:8080/api/subscriptions/9332827c-7972-454f-bee1-a128047c5557 \
+    -H "Content-Type: application/json" \
+    -d '{
+      "name": "Updated Webhook Name",
+      "target_url": "https://jsonplaceholder.typicode.com/posts",
+      "payload": {
+        "custom_field": "new_value",
+        "another_field": 456
+      }
+    }'
+  ```
 
 #### Delete a Subscription
 
-```bash
-curl -X DELETE http://localhost:8080/subscriptions/YOUR_SUBSCRIPTION_ID
-```
+Deletes a subscription by ID.
+
+- **URL**: `/api/subscriptions/:id`
+- **Method**: `DELETE`
+- **URL Parameters**: `id=[UUID]` - The subscription ID
+- **Success Response**:
+  - **Code**: `200 OK`
+  - **Content**:
+    ```json
+    {
+      "message": "Subscription deleted"
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X DELETE http://localhost:8080/api/subscriptions/9332827c-7972-454f-bee1-a128047c5557
+  ```
 
 ### Webhook Delivery
 
 #### Ingest a Webhook
 
-```bash
-curl -X POST http://localhost:8080/api/ingest/YOUR_SUBSCRIPTION_ID \
-  -H "Content-Type: application/json" \
-  -d '{
+Manually trigger a webhook delivery for a specific subscription.
+
+- **URL**: `/api/ingest/:id`
+- **Method**: `POST`
+- **Content-Type**: `application/json`
+- **URL Parameters**: `id=[UUID]` - The subscription ID
+- **Request Body**: Custom payload (optional, overrides subscription payload)
+  ```json
+  {
     "title": "foo",
     "body": "bar",
     "userId": 1
-  }'
-```
+  }
+  ```
+- **Success Response**:
+  - **Code**: `202 Accepted`
+  - **Content**:
+    ```json
+    {
+      "task_id": "4567f21a-9012-45b6-89cd-ef0123456789",
+      "message": "Webhook queued for delivery"
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X POST http://localhost:8080/api/ingest/9332827c-7972-454f-bee1-a128047c5557 \
+    -H "Content-Type: application/json" \
+    -d '{
+      "title": "foo",
+      "body": "bar",
+      "userId": 1
+    }'
+  ```
 
 #### Check Task Status
 
-```bash
-curl -X GET http://localhost:8080/api/tasks/YOUR_TASK_ID
-```
+Get the current status of a delivery task.
+
+- **URL**: `/api/tasks/:id`
+- **Method**: `GET`
+- **URL Parameters**: `id=[UUID]` - The task ID
+- **Success Response**:
+  - **Code**: `200 OK`
+  - **Content**:
+    ```json
+    {
+      "id": "4567f21a-9012-45b6-89cd-ef0123456789",
+      "subscription_id": "9332827c-7972-454f-bee1-a128047c5557",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_attempt": "2023-07-01T10:20:30Z",
+      "next_attempt": null
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X GET http://localhost:8080/api/tasks/4567f21a-9012-45b6-89cd-ef0123456789
+  ```
 
 #### Get Subscription Tasks
 
-```bash
-curl -X GET http://localhost:8080/api/subscriptions/YOUR_SUBSCRIPTION_ID/tasks
-```
+Retrieve all tasks related to a subscription.
+
+- **URL**: `/api/subscriptions/:id/tasks`
+- **Method**: `GET`
+- **URL Parameters**: `id=[UUID]` - The subscription ID
+- **Query Parameters**: `limit=[integer]` - Number of tasks to return (default: 20), `offset=[integer]` - Pagination offset (default: 0)
+- **Success Response**:
+  - **Code**: `200 OK`
+  - **Content**:
+    ```json
+    {
+      "tasks": [
+        {
+          "id": "4567f21a-9012-45b6-89cd-ef0123456789",
+          "status": "completed",
+          "attempt_count": 1,
+          "last_attempt": "2023-07-01T10:20:30Z"
+        },
+        {
+          "id": "7890d45e-3456-78f9-abcd-ef0123456789",
+          "status": "failed",
+          "attempt_count": 3,
+          "last_attempt": "2023-07-01T11:30:45Z"
+        }
+      ],
+      "total": 2,
+      "limit": 20,
+      "offset": 0
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X GET http://localhost:8080/api/subscriptions/9332827c-7972-454f-bee1-a128047c5557/tasks?limit=10
+  ```
 
 ### Analytics and Logs
 
-#### Get Task Logs
-
-```bash
-curl -X GET http://localhost:8080/api/tasks/YOUR_TASK_ID/logs
-```
 
 #### Get Subscription Logs
 
-```bash
-curl -X GET http://localhost:8080/api/subscriptions/YOUR_SUBSCRIPTION_ID/logs
-```
+Retrieve logs for all tasks related to a subscription.
 
-#### Get Task Analytics
+- **URL**: `/api/subscriptions/:id/logs`
+- **Method**: `GET`
+- **URL Parameters**: `id=[UUID]` - The subscription ID
+- **Query Parameters**: `limit=[integer]` - Number of logs to return (default: 20), `offset=[integer]` - Pagination offset (default: 0)
+- **Success Response**:
+  - **Code**: `200 OK`
+  - **Content**:
+    ```json
+    {
+      "logs": [
+        {
+          "id": "abc123de-f456-78g9-hijk-lmnopqrst012",
+          "task_id": "4567f21a-9012-45b6-89cd-ef0123456789",
+          "timestamp": "2023-07-01T10:20:25Z",
+          "attempt_number": 1,
+          "status": "success",
+          "status_code": 201
+        },
+        {
+          "id": "def456gh-i789-01j2-klmn-opqrstu3456",
+          "task_id": "7890d45e-3456-78f9-abcd-ef0123456789",
+          "timestamp": "2023-07-01T11:30:40Z",
+          "attempt_number": 3,
+          "status": "failed",
+          "status_code": 500
+        }
+      ],
+      "total": 4,
+      "limit": 20,
+      "offset": 0
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X GET http://localhost:8080/api/subscriptions/9332827c-7972-454f-bee1-a128047c5557/logs?limit=10
+  ```
 
-```bash
-curl -X GET http://localhost:8080/api/analytics/tasks/YOUR_TASK_ID
-```
+
 
 #### Get Recent Delivery Attempts
 
-```bash
-curl -X GET http://localhost:8080/api/analytics/subscriptions/YOUR_SUBSCRIPTION_ID/recent-attempts?limit=10
-```
+Get analytics on recent delivery attempts for a subscription.
+
+- **URL**: `/api/analytics/subscriptions/:id/recent-attempts`
+- **Method**: `GET`
+- **URL Parameters**: `id=[UUID]` - The subscription ID
+- **Query Parameters**: `limit=[integer]` - Number of attempts to return (default: 10)
+- **Success Response**:
+  - **Code**: `200 OK`
+  - **Content**:
+    ```json
+    {
+      "subscription_id": "9332827c-7972-454f-bee1-a128047c5557",
+      "attempts": [
+        {
+          "task_id": "4567f21a-9012-45b6-89cd-ef0123456789",
+          "timestamp": "2023-07-01T10:20:25Z",
+          "status": "success",
+          "status_code": 201,
+          "response_time": 245
+        },
+        {
+          "task_id": "7890d45e-3456-78f9-abcd-ef0123456789",
+          "timestamp": "2023-07-01T11:30:40Z",
+          "status": "failed",
+          "status_code": 500,
+          "response_time": 1250
+        }
+      ],
+      "success_rate": 50.0,
+      "average_response_time": 747.5
+    }
+    ```
+- **Example**:
+  ```bash
+  curl -X GET http://localhost:8080/api/analytics/subscriptions/9332827c-7972-454f-bee1-a128047c5557/recent-attempts?limit=10
+  ```
 
 ## Testing with JSONPlaceholder
 
@@ -234,6 +492,7 @@ Example webhook configuration:
   ```
 
 JSONPlaceholder will return a mock response with status code 201 (Created), making it ideal for testing webhook delivery.
+
 
 ## Cost Estimation
 
@@ -261,16 +520,4 @@ Notes:
 
 1. **Webhook Payload Size**: Maximum payload size is 1MB
 2. **Rate Limiting**: No rate limiting implemented in the current version
-3. **Authentication**: Basic authentication for API endpoints not implemented
-4. **Idempotency**: Webhooks are not guaranteed to be delivered exactly once
-5. **Disaster Recovery**: Basic recovery from application crashes, but no cross-region redundancy
-6. **Monitoring**: No built-in monitoring or alerting system
 
-## Future Improvements
-
-1. Implement API authentication
-2. Add rate limiting for webhook ingestion
-3. Support webhook signatures for payload verification
-4. Add monitoring and alerting
-5. Implement event filtering capabilities
-6. Add support for batch processing of webhooks
